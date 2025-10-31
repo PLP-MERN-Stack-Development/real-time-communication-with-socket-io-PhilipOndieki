@@ -1,6 +1,6 @@
 // controllers/userController.js - User management controller
 
-const User = require('../models/User');
+const User = require('../models/user');
 const { ErrorResponse } = require('../middleware/errorHandler');
 
 /** Get all online users */

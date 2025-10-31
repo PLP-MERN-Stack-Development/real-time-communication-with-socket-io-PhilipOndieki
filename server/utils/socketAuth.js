@@ -1,7 +1,7 @@
 // utils/socketAuth.js - Socket.io authentication utilities
 
 const { verifyAccessToken } = require('./jwtUtils');
-const User = require('../models/User');
+const User = require('../models/user');
 
 /**
  * Middleware to authenticate socket connections

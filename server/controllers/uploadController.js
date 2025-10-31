@@ -204,7 +204,7 @@ const uploadAvatar = async (req, res, next) => {
     fs.unlinkSync(filePath);
 
     // Update user's avatar in database
-    const User = require('../models/User');
+    const User = require('../models/user');
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { avatar: result.secure_url },

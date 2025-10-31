@@ -1,7 +1,7 @@
 // middleware/auth.js - Authentication middleware using JWT
 
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const User = require('../models/user');
 
 /**
  * Middleware to protect routes - requires valid JWT token

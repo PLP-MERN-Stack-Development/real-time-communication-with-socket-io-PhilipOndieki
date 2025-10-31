@@ -3,9 +3,9 @@
 
 const { Server } = require('socket.io');
 const { socketAuthMiddleware } = require('../utils/socketAuth');
-const User = require('../models/User');
-const Message = require('../models/Message');
-const Room = require('../models/Room');
+const User = require('../models/user');
+const Message = require('../models/message');
+const Room = require('../models/room');
 
 // Store for tracking typing users and online users
 const onlineUsers = new Map(); // userId -> socketId

@@ -1,6 +1,6 @@
 // controllers/roomController.js - Room management controller
 
-const Room = require('../models/Room');
+const Room = require('../models/room');
 const { ErrorResponse } = require('../middleware/errorHandler');
 
 /** Get all public rooms */

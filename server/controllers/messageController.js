@@ -1,7 +1,7 @@
 // controllers/messageController.js - Message management controller
 
-const Message = require('../models/Message');
-const Room = require('../models/Room');
+const Message = require('../models/message');
+const Room = require('../models/room');
 const { ErrorResponse } = require('../middleware/errorHandler');
 
 /**

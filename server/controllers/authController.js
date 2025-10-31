@@ -1,6 +1,6 @@
 // controllers/authController.js - Authentication controller
 
-const User = require('../models/User');
+const User = require('../models/user');
 const { generateTokens } = require('../utils/jwtUtils');
 const { ErrorResponse } = require('../middleware/errorHandler');
 
