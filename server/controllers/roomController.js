@@ -122,8 +122,7 @@ const deleteRoom = async (req, res, next) => {
       return next(new ErrorResponse('Only the creator can delete the room', 403));
     }
 
-    room.isActive = false;
-    await room.save();
+    await room.deleteOne();
 
     res.json({
       success: true,
