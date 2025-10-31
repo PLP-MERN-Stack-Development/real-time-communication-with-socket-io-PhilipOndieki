@@ -93,6 +93,10 @@ const blockUser = async (req, res, next) => {
   try {
     const { userId } = req.params;
 
+    if (userId === req.user._id.toString()) {
+    return next(new ErrorResponse('You cannot block yourself', 400));
+    }
+
     const user = await User.findById(req.user._id);
 
     if (!user.blockedUsers.includes(userId)) {
