@@ -5,15 +5,9 @@ import { useAuth } from '../../context/AuthContext';
 import {
   Send,
   Paperclip,
-  Smile,
   MoreVertical,
-  Phone,
-  Video,
-  Info,
   ArrowLeft,
   Loader2,
-  Image as ImageIcon,
-  File as FileIcon,
   X
 } from 'lucide-react';
 import MessageBubble from './MessageBubble';
@@ -132,17 +126,13 @@ const ConversationArea = () => {
       setUploading(false);
     }
 
-    const messageData = {
-      content: messageInput.trim() || `Sent a ${messageType}`,
-      messageType,
-      fileUrl,
-    };
+    const content = messageInput.trim() || `Sent a ${messageType}`;
 
-    // Send message
+    // Send message - pass parameters individually
     if (activeConversation.type === 'room') {
-      sendMessage(activeConversation.id, messageData);
+      sendMessage(activeConversation.id, content, messageType, fileUrl);
     } else {
-      sendPrivateMessage(activeConversation.id, messageData);
+      sendPrivateMessage(activeConversation.id, content, messageType, fileUrl);
     }
 
     // Clear input and file
@@ -166,10 +156,13 @@ const ConversationArea = () => {
 
   // Get typing indicator text
   const getTypingText = () => {
-    const key = activeConversation?.type === 'room' 
+    if (!activeConversation) return null;
+    
+    const key = activeConversation.type === 'room' 
       ? activeConversation.id 
-      : activeConversation?.id;
-    const typingUser = typingUsers[key];
+      : activeConversation.id;
+    
+    const typingUser = typingUsers?.[key];
     
     if (typingUser) {
       return `${typingUser.username} is typing...`;
@@ -180,10 +173,10 @@ const ConversationArea = () => {
   // No conversation selected
   if (!activeConversation) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-cyan-50">
+      <div className="flex-1 flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="w-24 h-24 bg-cyan-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Send className="w-12 h-12 text-cyan-500" />
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Send className="w-12 h-12 text-gray-400" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             Select a conversation
@@ -196,16 +189,18 @@ const ConversationArea = () => {
     );
   }
 
+  const typingText = getTypingText();
+
   return (
-    <div className="flex-1 flex flex-col bg-cyan-400 h-screen">
+    <div className="flex-1 flex flex-col bg-white h-screen">
       {/* Chat Header */}
-      <div className="bg-white px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+      <div className="bg-white px-4 md:px-6 py-4 border-b border-gray-200 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setActiveConversation(null)}
             className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
+            <ArrowLeft className="w-5 h-5 text-gray-900" />
           </button>
           
           {/* Avatar */}
@@ -217,7 +212,7 @@ const ConversationArea = () => {
                 className="w-10 h-10 rounded-full object-cover"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-cyan-500 flex items-center justify-center text-white font-semibold">
+              <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-semibold">
                 {activeConversation.name?.charAt(0).toUpperCase()}
               </div>
             )}
@@ -240,30 +235,24 @@ const ConversationArea = () => {
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <Phone className="w-5 h-5 text-gray-600" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <Video className="w-5 h-5 text-gray-600" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <Info className="w-5 h-5 text-gray-600" />
+            <MoreVertical className="w-5 h-5 text-gray-900" />
           </button>
         </div>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
-        {messages.length === 0 ? (
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 bg-white custom-scrollbar">
+        {!messages || messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-white/80">No messages yet. Start the conversation!</p>
+            <p className="text-gray-400">No messages yet. Start the conversation!</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-1">
             {messages.map((message) => (
               <MessageBubble
                 key={message.id || message._id}
                 message={message}
-                isOwn={message.sender?.id === user?.id || message.sender === user?.id}
+                isOwn={message.sender?.id === user?.id || message.sender?._id === user?.id || message.sender === user?.id}
               />
             ))}
             <div ref={messagesEndRef} />
@@ -271,16 +260,16 @@ const ConversationArea = () => {
         )}
 
         {/* Typing Indicator */}
-        {getTypingText() && (
+        {typingText && (
           <div className="mt-4">
-            <TypingIndicator username={getTypingText()} />
+            <TypingIndicator username={typingText} />
           </div>
         )}
       </div>
 
       {/* File Preview */}
       {uploadPreview && (
-        <div className="px-6 py-2 bg-white border-t border-gray-200">
+        <div className="px-4 md:px-6 py-2 bg-white border-t border-gray-200">
           <div className="relative inline-block">
             <img
               src={uploadPreview}
@@ -298,8 +287,8 @@ const ConversationArea = () => {
       )}
 
       {/* Message Input */}
-      <div className="bg-white px-6 py-4 border-t border-gray-200">
-        <div className="flex items-end gap-3">
+      <div className="bg-white px-4 md:px-6 py-4 border-t border-gray-200">
+        <div className="flex items-end gap-2 md:gap-3">
           {/* File Upload */}
           <input
             ref={fileInputRef}
@@ -318,14 +307,13 @@ const ConversationArea = () => {
 
           {/* Input Field */}
           <div className="flex-1">
-            <textarea
+            <input
+              type="text"
               value={messageInput}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
-              placeholder="Type a message..."
-              rows={1}
-              className="w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none max-h-32"
-              style={{ minHeight: '48px' }}
+              placeholder="Message"
+              className="w-full px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-300 text-sm"
             />
           </div>
 
@@ -333,7 +321,7 @@ const ConversationArea = () => {
           <button
             onClick={handleSendMessage}
             disabled={(!messageInput.trim() && !selectedFile) || uploading}
-            className="p-3 bg-cyan-500 text-white rounded-full hover:bg-cyan-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+            className="p-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
           >
             {uploading ? (
               <Loader2 className="w-5 h-5 animate-spin" />

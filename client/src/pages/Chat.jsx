@@ -21,7 +21,7 @@ const Chat = () => {
     return (
       <div className="h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -36,7 +36,7 @@ const Chat = () => {
       {/* Main Conversation Area */}
       <ConversationArea />
 
-      {/* Connection Status Indicator (optional) */}
+      {/* Connection Status Indicator */}
       {!isConnected && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-2 rounded-lg shadow-lg z-50">
           <p className="text-sm font-medium">Reconnecting...</p>

@@ -5,13 +5,9 @@ import { useChat } from '../../context/ChatContext';
 import { 
   Search, 
   Plus, 
-  MessageCircle, 
-  Users, 
-  Settings, 
-  LogOut,
+  MessageCircle,
   MoreVertical,
   User,
-  MessageSquare,
   Hash
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -74,7 +70,7 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="w-full md:w-96 bg-white border-r border-gray-200 flex flex-col h-screen">
+    <div className={`${activeConversation ? 'hidden md:flex' : 'flex'} w-full md:w-96 bg-white border-r border-gray-200 flex-col h-screen`}>
       {/* Header */}
       <div className="px-4 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
@@ -82,18 +78,18 @@ const Sidebar = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowNewChatModal(true)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               title="New Chat"
             >
-              <Plus className="w-5 h-5 text-gray-600" />
+              <Plus className="w-6 h-6 text-gray-900" />
             </button>
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 title="Menu"
               >
-                <MoreVertical className="w-5 h-5 text-gray-600" />
+                <MoreVertical className="w-6 h-6 text-gray-900" />
               </button>
               
               {/* User Menu Dropdown */}
@@ -109,34 +105,11 @@ const Sidebar = () => {
                       <p className="text-xs text-gray-500">{user?.email}</p>
                     </div>
                     <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        // Add profile logic
-                      }}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-gray-700"
+                      onClick={handleLogout}
+                      className="w-full px-4 py-2 text-left hover:bg-gray-100 text-gray-900"
                     >
-                      <User className="w-4 h-4" />
-                      Profile
+                      Logout
                     </button>
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        // Add settings logic
-                      }}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-gray-700"
-                    >
-                      <Settings className="w-4 h-4" />
-                      Settings
-                    </button>
-                    <div className="border-t border-gray-100 mt-1 pt-1">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-red-600"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Logout
-                      </button>
-                    </div>
                   </div>
                 </>
               )}
@@ -149,17 +122,17 @@ const Sidebar = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search conversations..."
+            placeholder="Search chats"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300"
           />
         </div>
       </div>
 
       {/* Conversations List */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {filteredConversations.length === 0 ? (
+        {Array.isArray(filteredConversations) && filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <MessageCircle className="w-16 h-16 text-gray-300 mb-4" />
             <p className="text-gray-600 font-medium">No conversations yet</p>
@@ -168,13 +141,13 @@ const Sidebar = () => {
             </p>
             <button
               onClick={() => setShowNewChatModal(true)}
-              className="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+              className="mt-4 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
               Start Chat
             </button>
           </div>
         ) : (
-          filteredConversations.map((conversation) => {
+          (filteredConversations || []).map((conversation) => {
             const isActive = activeConversation?.id === conversation.id && 
                            activeConversation?.type === conversation.type;
             const unread = getUnreadCount(conversation);
@@ -197,7 +170,7 @@ const Sidebar = () => {
                         className="w-12 h-12 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-cyan-500 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
                         {conversation.type === 'room' ? (
                           <Hash className="w-6 h-6 text-white" />
                         ) : (
@@ -225,7 +198,7 @@ const Sidebar = () => {
                         {formatLastMessage(conversation.lastMessage)}
                       </p>
                       {unread > 0 && (
-                        <span className="flex-shrink-0 ml-2 px-2 py-0.5 bg-cyan-500 text-white text-xs font-semibold rounded-full">
+                        <span className="flex-shrink-0 ml-2 min-w-[20px] h-5 px-2 bg-black text-white text-xs font-semibold rounded-full flex items-center justify-center">
                           {unread > 99 ? '99+' : unread}
                         </span>
                       )}

@@ -1,4 +1,4 @@
-// context/ChatContext.jsx - Chat state management context
+// src/context/ChatContext.jsx - Chat state management context
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSocket } from './SocketContext';
 import { useAuth } from './AuthContext';
@@ -20,16 +20,14 @@ export const ChatProvider = ({ children }) => {
 
   // State management
   const [rooms, setRooms] = useState([]);
-  const [activeRoom, setActiveRoom] = useState(null);
-  const [activeChatType, setActiveChatType] = useState(null); // 'room' or 'direct'
-  const [activeDirectChat, setActiveDirectChat] = useState(null);
-  const [conversations, setConversations] = useState([]);
+  const [activeConversation, setActiveConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [directMessages, setDirectMessages] = useState({});
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsers, setTypingUsers] = useState({});
   const [unreadCounts, setUnreadCounts] = useState({});
   const [searchResults, setSearchResults] = useState([]);
+  const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -124,6 +122,9 @@ export const ChatProvider = ({ children }) => {
         ...prev,
         [userId]: reversedMessages,
       }));
+      
+      // Also set as current messages
+      setMessages(reversedMessages);
       
       setError(null);
       return response.data.data.pagination;
@@ -278,6 +279,28 @@ export const ChatProvider = ({ children }) => {
     [socket, isConnected]
   );
 
+  // Typing indicator wrapper
+  const sendTypingIndicator = useCallback(
+    (conversation, isTyping) => {
+      if (!conversation) return;
+
+      if (conversation.type === 'room') {
+        if (isTyping) {
+          startTyping(conversation.id, null);
+        } else {
+          stopTyping(conversation.id, null);
+        }
+      } else {
+        if (isTyping) {
+          startTyping(null, conversation.id);
+        } else {
+          stopTyping(null, conversation.id);
+        }
+      }
+    },
+    [startTyping, stopTyping]
+  );
+
   // Mark message as read
   const markMessageAsRead = useCallback(
     (messageId, roomId = null) => {
@@ -309,8 +332,14 @@ export const ChatProvider = ({ children }) => {
 
       socket.emit('room:join', { roomId }, (response) => {
         if (response.success) {
-          setActiveRoom(response.room);
-          setActiveChatType('room');
+          const roomConv = {
+            id: response.room._id || response.room.id,
+            type: 'room',
+            name: response.room.name,
+            avatar: null,
+            isOnline: false,
+          };
+          setActiveConversation(roomConv);
           fetchRoomMessages(roomId);
         } else {
           setError(response.message || 'Failed to join room');
@@ -332,15 +361,40 @@ export const ChatProvider = ({ children }) => {
 
   // Open direct chat
   const openDirectChat = useCallback(
-    async (user) => {
-      setActiveDirectChat(user);
-      setActiveChatType('direct');
-      setActiveRoom(null);
+    async (targetUser) => {
+      const directConv = {
+        id: targetUser.id || targetUser._id,
+        type: 'direct',
+        name: targetUser.username,
+        avatar: targetUser.avatar,
+        isOnline: !!onlineUsers.find((u) => u.userId === (targetUser.id || targetUser._id)),
+      };
+      
+      setActiveConversation(directConv);
       
       // Fetch messages for this user
-      await fetchDirectMessages(user.id);
+      await fetchDirectMessages(targetUser.id || targetUser._id);
     },
-    [fetchDirectMessages]
+    [fetchDirectMessages, onlineUsers]
+  );
+
+  // Load messages helper
+  const loadMessages = useCallback(
+    async (conversation) => {
+      if (!conversation) return;
+
+      if (conversation.type === 'room') {
+        await fetchRoomMessages(conversation.id);
+      } else if (conversation.type === 'direct') {
+        const messagesForUser = directMessages[conversation.id];
+        if (!messagesForUser || messagesForUser.length === 0) {
+          await fetchDirectMessages(conversation.id);
+        } else {
+          setMessages(messagesForUser);
+        }
+      }
+    },
+    [fetchRoomMessages, fetchDirectMessages, directMessages]
   );
 
   // ==================== SOCKET EVENT LISTENERS ====================
@@ -350,7 +404,7 @@ export const ChatProvider = ({ children }) => {
 
     // Message received in room
     const handleMessageReceive = (data) => {
-      if (activeRoom && data.roomId === activeRoom._id) {
+      if (activeConversation?.type === 'room' && data.roomId === activeConversation.id) {
         setMessages((prev) => [...prev, data.message]);
         
         // Mark as read if chat is active
@@ -378,7 +432,8 @@ export const ChatProvider = ({ children }) => {
       }));
 
       // Mark as read if this is the active chat
-      if (activeDirectChat && activeDirectChat.id === otherUserId) {
+      if (activeConversation?.type === 'direct' && activeConversation.id === otherUserId) {
+        setMessages((prev) => [...prev, data.message]);
         if (data.message.sender._id !== user?.id) {
           markMessageAsRead(data.message._id);
         }
@@ -507,13 +562,11 @@ export const ChatProvider = ({ children }) => {
 
     // User joined room
     const handleUserJoinedRoom = (data) => {
-      // Could add system message or update room member list
       console.log('User joined room:', data);
     };
 
     // User left room
     const handleUserLeftRoom = (data) => {
-      // Could add system message or update room member list
       console.log('User left room:', data);
     };
 
@@ -540,7 +593,7 @@ export const ChatProvider = ({ children }) => {
       socket.off('room:user:joined', handleUserJoinedRoom);
       socket.off('room:user:left', handleUserLeftRoom);
     };
-  }, [socket, isConnected, activeRoom, activeDirectChat, user, markMessageAsRead]);
+  }, [socket, isConnected, activeConversation, user, markMessageAsRead]);
 
   // Fetch initial data on mount
   useEffect(() => {
@@ -552,42 +605,71 @@ export const ChatProvider = ({ children }) => {
 
   // Clear unread count when opening a chat
   useEffect(() => {
-    if (activeRoom) {
+    if (activeConversation) {
+      const key = activeConversation.type === 'room' 
+        ? activeConversation.id 
+        : `direct_${activeConversation.id}`;
+      
       setUnreadCounts((prev) => {
         const updated = { ...prev };
-        delete updated[activeRoom._id];
+        delete updated[key];
         return updated;
       });
     }
-    
-    if (activeDirectChat) {
-      setUnreadCounts((prev) => {
-        const updated = { ...prev };
-        delete updated[`direct_${activeDirectChat.id}`];
-        return updated;
-      });
-    }
-  }, [activeRoom, activeDirectChat]);
+  }, [activeConversation]);
+
+  // Build conversations list from rooms and direct messages
+  useEffect(() => {
+    // Map rooms to conversation format
+    const roomConversations = (rooms || []).map((room) => ({
+      id: room._id || room.id,
+      type: 'room',
+      name: room.name,
+      avatar: null,
+      isOnline: false,
+      lastMessage: room.lastMessage || null,
+      lastActivity: room.updatedAt || room.createdAt || new Date(),
+    }));
+
+    // Map direct messages to conversation format
+    const directConversations = Object.entries(directMessages).map(([userId, messages]) => {
+      const user = onlineUsers.find((u) => u.userId === userId) || searchResults.find((u) => (u.id || u._id) === userId);
+      const lastMsg = messages[messages.length - 1];
+      
+      return {
+        id: userId,
+        type: 'direct',
+        name: user?.username || 'Unknown User',
+        avatar: user?.avatar || null,
+        isOnline: !!onlineUsers.find((u) => u.userId === userId),
+        lastMessage: lastMsg || null,
+        lastActivity: lastMsg?.createdAt || new Date(),
+      };
+    });
+
+    const allConversations = [...roomConversations, ...directConversations].sort(
+      (a, b) => new Date(b.lastActivity) - new Date(a.lastActivity)
+    );
+
+    setConversations(allConversations);
+  }, [rooms, directMessages, onlineUsers, searchResults]);
 
   const value = {
     // State
     rooms,
-    activeRoom,
-    activeChatType,
-    activeDirectChat,
+    activeConversation,
     messages,
     directMessages,
     onlineUsers,
     typingUsers,
     unreadCounts,
     searchResults,
+    conversations,
     loading,
     error,
 
     // Actions
-    setActiveRoom,
-    setActiveChatType,
-    setActiveDirectChat,
+    setActiveConversation,
     fetchPublicRooms,
     fetchUserRooms,
     fetchRoomMessages,
@@ -596,8 +678,9 @@ export const ChatProvider = ({ children }) => {
     fetchOnlineUsers,
     createRoom,
     uploadFile,
-    sendRoomMessage,
+    sendMessage: sendRoomMessage,
     sendPrivateMessage,
+    sendTypingIndicator,
     startTyping,
     stopTyping,
     markMessageAsRead,
@@ -605,6 +688,7 @@ export const ChatProvider = ({ children }) => {
     joinRoom,
     leaveRoom,
     openDirectChat,
+    loadMessages,
     setError,
   };
 
