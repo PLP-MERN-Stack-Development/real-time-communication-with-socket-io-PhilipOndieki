@@ -23,6 +23,7 @@ export const ChatProvider = ({ children }) => {
   const [activeRoom, setActiveRoom] = useState(null);
   const [activeChatType, setActiveChatType] = useState(null); // 'room' or 'direct'
   const [activeDirectChat, setActiveDirectChat] = useState(null);
+  const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [directMessages, setDirectMessages] = useState({});
   const [onlineUsers, setOnlineUsers] = useState([]);
