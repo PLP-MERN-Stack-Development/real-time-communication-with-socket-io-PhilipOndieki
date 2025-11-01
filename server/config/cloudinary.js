@@ -1,8 +1,10 @@
-// config/cloudinary.js - Cloudinary configuration for image uploads
 
+// Enhanced debugging configuration
 const cloudinary = require('cloudinary').v2;
 
-// Configure Cloudinary
+console.log('🔍 Starting Cloudinary configuration...');
+
+// Configure Cloudinary - use individual credentials approach
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
