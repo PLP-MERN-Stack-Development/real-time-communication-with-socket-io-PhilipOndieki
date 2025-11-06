@@ -243,7 +243,7 @@ const Sidebar = () => {
         </div>
 
         {/* Desktop: New Chat Button on Divider */}
-        <div className="hidden md:block absolute right-0 bottom-6 transform translate-x-1/2 z-50">
+        <div className="hidden md:block absolute right-6 bottom-6 transform translate-x-1/2 z-50">
           <button
             onClick={() => setShowNewChatModal(true)}
             className="w-12 h-12 bg-black hover:bg-gray-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center no-select"

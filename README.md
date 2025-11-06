@@ -1,7 +1,10 @@
 # 🎵 Echolia - Real-Time Chat Application
 ### Where Voices Resonate - Modern iOS-Inspired Minimalist Design
 
-![Echolia Banner](https://ui-avatars.com/api/?name=Echolia&size=400&background=000000&color=ffffff&bold=true)
+![echolia]](image.png)
+![touching the type button](image-1.png)
+![group section](image-2.png)
+
 
 A beautiful, full-featured real-time chat application built with **Socket.io**, **React**, and **Node.js**. Echolia provides seamless real-time communication with a stunning iOS-inspired minimalist interface, complete marketing landing page, advanced features like typing indicators, message reactions, file sharing, browser notifications, and sound alerts.
 
@@ -791,7 +794,7 @@ MIT License - Feel free to use this project for learning and development.
 
 ## 👥 Author
 
-**PLP Student** - Week 5 Assignment Enhanced Implementation
+**Philip Ondieki** - Week 5 Assignment Enhanced Implementation
 
 ---
 
