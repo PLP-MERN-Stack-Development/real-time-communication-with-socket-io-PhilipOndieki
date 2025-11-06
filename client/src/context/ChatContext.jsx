@@ -1,8 +1,9 @@
-// src/context/ChatContext.jsx - Chat state management context
+// src/context/ChatContext.jsx - Enhanced chat context with notifications
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSocket } from './SocketContext';
 import { useAuth } from './AuthContext';
 import axios from 'axios';
+import notificationManager from '../utils/notifications';
 
 const ChatContext = createContext();
 
@@ -57,7 +58,6 @@ export const ChatProvider = ({ children }) => {
 
   // ==================== API CALLS ====================
 
-  // Fetch public rooms
   const fetchPublicRooms = useCallback(async () => {
     try {
       setLoading(true);
@@ -72,7 +72,6 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
-  // Fetch user's rooms
   const fetchUserRooms = useCallback(async () => {
     try {
       setLoading(true);
@@ -87,14 +86,11 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
-  // Fetch room messages
   const fetchRoomMessages = useCallback(async (roomId, page = 1, limit = 50) => {
     try {
       setLoading(true);
       const response = await api.get(`/messages/room/${roomId}?page=${page}&limit=${limit}`);
       const newMessages = response.data.data.messages || [];
-      
-      // Reverse messages to show oldest first
       setMessages(newMessages.reverse());
       setError(null);
       return response.data.data.pagination;
@@ -107,25 +103,19 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
-  // Fetch direct messages
   const fetchDirectMessages = useCallback(async (userId, page = 1, limit = 50) => {
     try {
       setLoading(true);
       const response = await api.get(`/messages/direct/${userId}?page=${page}&limit=${limit}`);
       const newMessages = response.data.data.messages || [];
-      
-      // Reverse messages to show oldest first
       const reversedMessages = newMessages.reverse();
       
-      // Store in direct messages object
       setDirectMessages((prev) => ({
         ...prev,
         [userId]: reversedMessages,
       }));
       
-      // Also set as current messages
       setMessages(reversedMessages);
-      
       setError(null);
       return response.data.data.pagination;
     } catch (err) {
@@ -137,7 +127,6 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
-  // Search users
   const searchUsers = useCallback(async (query) => {
     try {
       if (!query || query.trim().length < 2) {
@@ -154,7 +143,6 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
-  // Get online users
   const fetchOnlineUsers = useCallback(async () => {
     try {
       const response = await api.get('/users/online');
@@ -165,16 +153,13 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
-  // Create room
   const createRoom = useCallback(async (roomData) => {
     try {
       setLoading(true);
       const response = await api.post('/rooms', roomData);
       const newRoom = response.data.data.room;
-      
       setRooms((prev) => [newRoom, ...prev]);
       setError(null);
-      
       return newRoom;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create room');
@@ -185,29 +170,8 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
-  // Upload file
-  const uploadFile = useCallback(async (file, type = 'file') => {
-    try {
-      const formData = new FormData();
-      formData.append(type, file);
-
-      const response = await api.post(`/upload${type === 'avatar' ? '/avatar' : ''}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      return response.data.data;
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to upload file');
-      console.error('Error uploading file:', err);
-      throw err;
-    }
-  }, []);
-
   // ==================== SOCKET HANDLERS ====================
 
-  // Send message to room
   const sendRoomMessage = useCallback(
     (roomId, content, messageType = 'text', fileUrl = null) => {
       if (!socket || !isConnected) {
@@ -217,12 +181,7 @@ export const ChatProvider = ({ children }) => {
 
       socket.emit(
         'message:send',
-        {
-          roomId,
-          content,
-          messageType,
-          fileUrl,
-        },
+        { roomId, content, messageType, fileUrl },
         (response) => {
           if (!response.success) {
             setError(response.message || 'Failed to send message');
@@ -233,7 +192,6 @@ export const ChatProvider = ({ children }) => {
     [socket, isConnected]
   );
 
-  // Send private message
   const sendPrivateMessage = useCallback(
     (recipientId, content, messageType = 'text', fileUrl = null) => {
       if (!socket || !isConnected) {
@@ -243,12 +201,7 @@ export const ChatProvider = ({ children }) => {
 
       socket.emit(
         'message:private',
-        {
-          recipientId,
-          content,
-          messageType,
-          fileUrl,
-        },
+        { recipientId, content, messageType, fileUrl },
         (response) => {
           if (!response.success) {
             setError(response.message || 'Failed to send message');
@@ -259,27 +212,22 @@ export const ChatProvider = ({ children }) => {
     [socket, isConnected]
   );
 
-  // Start typing indicator
   const startTyping = useCallback(
     (roomId = null, recipientId = null) => {
       if (!socket || !isConnected) return;
-
       socket.emit('typing:start', { roomId, recipientId });
     },
     [socket, isConnected]
   );
 
-  // Stop typing indicator
   const stopTyping = useCallback(
     (roomId = null, recipientId = null) => {
       if (!socket || !isConnected) return;
-
       socket.emit('typing:stop', { roomId, recipientId });
     },
     [socket, isConnected]
   );
 
-  // Typing indicator wrapper
   const sendTypingIndicator = useCallback(
     (conversation, isTyping) => {
       if (!conversation) return;
@@ -301,17 +249,14 @@ export const ChatProvider = ({ children }) => {
     [startTyping, stopTyping]
   );
 
-  // Mark message as read
   const markMessageAsRead = useCallback(
     (messageId, roomId = null) => {
       if (!socket || !isConnected) return;
-
       socket.emit('message:read', { messageId, roomId });
     },
     [socket, isConnected]
   );
 
-  // Add reaction to message
   const addReaction = useCallback(
     (messageId, emoji) => {
       if (!socket || !isConnected) return;
@@ -325,7 +270,6 @@ export const ChatProvider = ({ children }) => {
     [socket, isConnected]
   );
 
-  // Join room
   const joinRoom = useCallback(
     (roomId) => {
       if (!socket || !isConnected) return;
@@ -349,17 +293,14 @@ export const ChatProvider = ({ children }) => {
     [socket, isConnected, fetchRoomMessages]
   );
 
-  // Leave room
   const leaveRoom = useCallback(
     (roomId) => {
       if (!socket || !isConnected) return;
-
       socket.emit('room:leave', { roomId });
     },
     [socket, isConnected]
   );
 
-  // Open direct chat
   const openDirectChat = useCallback(
     async (targetUser) => {
       const directConv = {
@@ -371,14 +312,11 @@ export const ChatProvider = ({ children }) => {
       };
       
       setActiveConversation(directConv);
-      
-      // Fetch messages for this user
       await fetchDirectMessages(targetUser.id || targetUser._id);
     },
     [fetchDirectMessages, onlineUsers]
   );
 
-  // Load messages helper
   const loadMessages = useCallback(
     async (conversation) => {
       if (!conversation) return;
@@ -407,16 +345,23 @@ export const ChatProvider = ({ children }) => {
       if (activeConversation?.type === 'room' && data.roomId === activeConversation.id) {
         setMessages((prev) => [...prev, data.message]);
         
-        // Mark as read if chat is active
         if (data.message.sender._id !== user?.id) {
           markMessageAsRead(data.message._id, data.roomId);
         }
       } else {
-        // Update unread count
         setUnreadCounts((prev) => ({
           ...prev,
           [data.roomId]: (prev[data.roomId] || 0) + 1,
         }));
+        
+        // Show notification
+        if (document.hidden && data.message.sender._id !== user?.id) {
+          notificationManager.showMessageNotification(
+            data.message.sender.username,
+            data.message,
+            false
+          );
+        }
       }
     };
 
@@ -431,18 +376,25 @@ export const ChatProvider = ({ children }) => {
         [otherUserId]: [...(prev[otherUserId] || []), data.message],
       }));
 
-      // Mark as read if this is the active chat
       if (activeConversation?.type === 'direct' && activeConversation.id === otherUserId) {
         setMessages((prev) => [...prev, data.message]);
         if (data.message.sender._id !== user?.id) {
           markMessageAsRead(data.message._id);
         }
       } else if (data.message.sender._id !== user?.id) {
-        // Update unread count for direct messages
         setUnreadCounts((prev) => ({
           ...prev,
           [`direct_${otherUserId}`]: (prev[`direct_${otherUserId}`] || 0) + 1,
         }));
+        
+        // Show notification
+        if (document.hidden) {
+          notificationManager.showMessageNotification(
+            data.message.sender.username,
+            data.message,
+            true
+          );
+        }
       }
     };
 
@@ -465,7 +417,6 @@ export const ChatProvider = ({ children }) => {
         return updated;
       });
 
-      // Auto-clear typing after 3 seconds
       if (data.isTyping) {
         setTimeout(() => {
           setTypingUsers((prev) => {
@@ -480,7 +431,6 @@ export const ChatProvider = ({ children }) => {
     // User online
     const handleUserOnline = (data) => {
       setOnlineUsers((prev) => {
-        // Check if user already exists
         if (prev.find((u) => u.userId === data.userId)) {
           return prev;
         }
@@ -495,7 +445,6 @@ export const ChatProvider = ({ children }) => {
 
     // Message read confirmation
     const handleMessageReadConfirm = (data) => {
-      // Update message read status in current messages
       setMessages((prev) =>
         prev.map((msg) =>
           msg._id === data.messageId
@@ -503,17 +452,13 @@ export const ChatProvider = ({ children }) => {
                 ...msg,
                 readBy: [
                   ...(msg.readBy || []),
-                  {
-                    user: data.readBy,
-                    readAt: data.readAt,
-                  },
+                  { user: data.readBy, readAt: data.readAt },
                 ],
               }
             : msg
         )
       );
 
-      // Update in direct messages
       setDirectMessages((prev) => {
         const updated = { ...prev };
         Object.keys(updated).forEach((userId) => {
@@ -523,10 +468,7 @@ export const ChatProvider = ({ children }) => {
                   ...msg,
                   readBy: [
                     ...(msg.readBy || []),
-                    {
-                      user: data.readBy,
-                      readAt: data.readAt,
-                    },
+                    { user: data.readBy, readAt: data.readAt },
                   ],
                 }
               : msg
@@ -546,7 +488,6 @@ export const ChatProvider = ({ children }) => {
         )
       );
 
-      // Update in direct messages
       setDirectMessages((prev) => {
         const updated = { ...prev };
         Object.keys(updated).forEach((userId) => {
@@ -562,12 +503,22 @@ export const ChatProvider = ({ children }) => {
 
     // User joined room
     const handleUserJoinedRoom = (data) => {
-      console.log('User joined room:', data);
+      if (document.hidden && data.user.id !== user?.id) {
+        notificationManager.showUserJoinedNotification(
+          data.user.username,
+          'the room'
+        );
+      }
     };
 
     // User left room
     const handleUserLeftRoom = (data) => {
-      console.log('User left room:', data);
+      if (document.hidden && data.userId !== user?.id) {
+        notificationManager.showUserLeftNotification(
+          data.username,
+          'the room'
+        );
+      }
     };
 
     // Register all event listeners
@@ -620,7 +571,6 @@ export const ChatProvider = ({ children }) => {
 
   // Build conversations list from rooms and direct messages
   useEffect(() => {
-    // Map rooms to conversation format
     const roomConversations = (rooms || []).map((room) => ({
       id: room._id || room.id,
       type: 'room',
@@ -631,7 +581,6 @@ export const ChatProvider = ({ children }) => {
       lastActivity: room.updatedAt || room.createdAt || new Date(),
     }));
 
-    // Map direct messages to conversation format
     const directConversations = Object.entries(directMessages).map(([userId, messages]) => {
       const user = onlineUsers.find((u) => u.userId === userId) || searchResults.find((u) => (u.id || u._id) === userId);
       const lastMsg = messages[messages.length - 1];
@@ -655,7 +604,6 @@ export const ChatProvider = ({ children }) => {
   }, [rooms, directMessages, onlineUsers, searchResults]);
 
   const value = {
-    // State
     rooms,
     activeConversation,
     messages,
@@ -667,8 +615,6 @@ export const ChatProvider = ({ children }) => {
     conversations,
     loading,
     error,
-
-    // Actions
     setActiveConversation,
     fetchPublicRooms,
     fetchUserRooms,
@@ -677,7 +623,6 @@ export const ChatProvider = ({ children }) => {
     searchUsers,
     fetchOnlineUsers,
     createRoom,
-    uploadFile,
     sendMessage: sendRoomMessage,
     sendPrivateMessage,
     sendTypingIndicator,
