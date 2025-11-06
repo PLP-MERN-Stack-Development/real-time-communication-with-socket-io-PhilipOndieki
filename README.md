@@ -1,7 +1,7 @@
 # 🎵 Echolia - Real-Time Chat Application
 ### Where Voices Resonate - Modern iOS-Inspired Minimalist Design
 
-![echolia]](image.png)
+![echolia](image.png)
 ![touching the type button](image-1.png)
 ![group section](image-2.png)
 
