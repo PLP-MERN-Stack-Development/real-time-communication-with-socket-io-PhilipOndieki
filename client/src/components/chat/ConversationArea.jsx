@@ -11,7 +11,8 @@ import {
   X,
   Mic,
   Plus,
-  Smile
+  Smile,
+  Search
 } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
@@ -228,9 +229,17 @@ const ConversationArea = () => {
         </div>
 
         {/* Action Buttons */}
-        <button className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0 touch-feedback no-select">
-          <MoreVertical className="w-5 h-5 text-gray-900" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0 touch-feedback no-select"
+            title="Search"
+          >
+            <Search className="w-5 h-5 text-gray-900" />
+          </button>
+          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0 touch-feedback no-select">
+            <MoreVertical className="w-5 h-5 text-gray-900" />
+          </button>
+        </div>
       </div>
 
       {/* Messages Area */}

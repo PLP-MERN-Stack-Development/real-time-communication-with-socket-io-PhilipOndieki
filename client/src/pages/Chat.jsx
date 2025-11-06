@@ -1,4 +1,4 @@
-// src/pages/Chat.jsx - Enhanced chat page with full-screen mobile support
+// src/pages/Chat.jsx - Enhanced chat page with divider line
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -66,13 +66,13 @@ const Chat = () => {
 
   return (
     <div className="h-screen flex overflow-hidden bg-white relative">
-      {/* Sidebar - Messages List */}
+      {/* Sidebar with Messages List + Divider Line (Desktop) */}
       <Sidebar />
       
       {/* Main Conversation Area */}
       <ConversationArea />
 
-      {/* Connection Status Indicator - REFINED */}
+      {/* Connection Status Indicator */}
       {!isConnected && (
         <div className="fixed top-4 right-4 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-full shadow-lg z-50 animate-fade-in">
           <div className="flex items-center gap-2">
